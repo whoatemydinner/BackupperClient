@@ -2,6 +2,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
+import java.security.*;
 import java.util.*;
 import javax.swing.*;
 
@@ -92,6 +93,7 @@ public class User extends JFrame implements Runnable {
 	        }
 	        new Thread(this).start();
 	       
+                pass = hash(pass);
 	       
 	        if(log == true) {
 	        	send(CloudProtocol.LOGIN + " " + login + " " + pass);
@@ -101,24 +103,23 @@ public class User extends JFrame implements Runnable {
 	       
 	    }
 
-
 	 public void run() {
 	        while (true) {
 	            	
-	            	String request = receive();	            	
+                        String request = receive();	            	
 	    			System.out.println(request);
 	    			StringTokenizer st = new StringTokenizer(request);
 	    			String command = st.nextToken();
 	    			
 	    			if(command.equals(CloudProtocol.NULL_COMMAND)) {
 	                	break;
-	                } else if (command.equals(CloudProtocol.LOGGEDIN)) { 
+	                } else if (command.equals(CloudProtocol.LOGGEDIN) || command.equals(CloudProtocol.CREATED)) { 
 	                	
-	                	parent.dispose();
+                            parent.dispose();
 	                	
-	                	setBackground(Color.lightGray);
+                            setBackground(Color.lightGray);
 	                   
-	                	
+	        
 	                    inf.setText("Ready");
 	                    
 	                    bAdd = new Button("Add File");
@@ -126,20 +127,21 @@ public class User extends JFrame implements Runnable {
 	                        public void actionPerformed(ActionEvent ae) {
 	                        	
 	                        	JFileChooser fc = new JFileChooser();
-	                        	//fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
 	                        	fc.setCurrentDirectory(new File(addFolder));
 	                        	fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
 	                        	int tmp = fc.showDialog(rootPane, "Add");
 	                        	File file = null;
 	                        	if(tmp == JFileChooser.APPROVE_OPTION) {
-	                        		file = fc.getSelectedFile();
-	                        
+	                        		file = fc.getSelectedFile();                
 	                        	}
 	                        	
-	                        	if(file != null) {
+	                        	if(file != null && file.getName().contains(" ") == false) {
 	                        		String filePath = file.getPath();
 	                        		send(CloudProtocol.ADD_FILE + " " + file.getName() + " " + filePath + " " + String.valueOf(file.length()));
 	                        	}
+                                        if(file.getName().contains(" ")){
+                                            JOptionPane.showMessageDialog(null, "Please choose a file without space in the name.");
+                                        }
 	                        }
 	                    });
 	                    
@@ -149,10 +151,7 @@ public class User extends JFrame implements Runnable {
 							@Override
 							public void actionPerformed(ActionEvent arg0) {
 								String tmp_tosplit = (String)(listOfFiles.getSelectedValue());
-								System.out.println(tmp_tosplit);
                                                                 String[] parts = tmp_tosplit.split(",");
-                                                                System.out.println(parts[0]);
-                                                                System.out.println(parts[1]);
 								bAdd.setEnabled(false);
 		                		bDelete.setEnabled(false);
 		                		bGetFile.setEnabled(false);
@@ -260,7 +259,7 @@ public class User extends JFrame implements Runnable {
                 		bGetFile.setEnabled(true);
                 		bLogout.setEnabled(true);
                 		
-                		inf.setText("File not founded");
+                		inf.setText("File not found");
 	                	
 	                } else if(command.equals(CloudProtocol.WRONG_LOGIN)) {
 	                	(parent.info).setText(CloudProtocol.WRONG_LOGIN);
@@ -283,130 +282,6 @@ public class User extends JFrame implements Runnable {
                 		
                 		inf.setText("File deleted");
                 		
-	                } else if(command.equals(CloudProtocol.CREATED)) {
-	                	
-	                	parent.dispose();
-	                	
-	                	setBackground(Color.lightGray);
-	                   
-	                	
-	                    inf.setText("Ready");
-	                    
-	                    bAdd = new Button("Add File");
-	                    bAdd.addActionListener(new ActionListener() {
-	                        public void actionPerformed(ActionEvent ae) {
-	                        	
-	                        	JFileChooser fc = new JFileChooser();
-	                        	//fc.setCurrentDirectory(new File(System.getProperty("user.dir")));
-	                        	fc.setCurrentDirectory(new File(addFolder));
-	                        	fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
-	                        	int tmp = fc.showDialog(rootPane, "Add");
-	                        	File file = null;
-	                        	if(tmp == JFileChooser.APPROVE_OPTION) {
-	                        		file = fc.getSelectedFile();
-	                        
-	                        	}
-	                        	
-	                        	if(file != null) {
-	                        		String filePath = file.getPath();
-	                        		send(CloudProtocol.ADD_FILE + " " + file.getName() + " " + filePath + " " + String.valueOf(file.length()));
-	                        		
-	                        	
-	                        	}
-	                        }
-	                    });
-	                    
-	                    bDelete = new Button("Delete File");
-	                    bDelete.addActionListener(new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent arg0) {
-								String tmp_tosplit = (String)(listOfFiles.getSelectedValue());
-								System.out.println(tmp_tosplit);
-                                                                String[] parts = tmp_tosplit.split(",");
-                                                                System.out.println(parts[0]);
-                                                                System.out.println(parts[1]);
-								
-								bAdd.setEnabled(false);
-		                		bDelete.setEnabled(false);
-		                		bGetFile.setEnabled(false);
-		                		bLogout.setEnabled(false);
-								inf.setText("Deleting...");
-								
-								send(CloudProtocol.DELETE_FILE + " " + parts[0]);
-								
-								
-								//System.out.println(CloudProtocol.DELETE_FILE + " " + tmp);
-								
-							}
-	                    	
-	                    });
-	                    bGetFile = new Button("Get File");
-	                    bGetFile.addActionListener(new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent arg0) {
-								
-								String tmp_tosplit = (String)(listOfFiles.getSelectedValue());
-								System.out.println(tmp_tosplit);
-                                                                String[] parts = tmp_tosplit.split(",");
-                                                                System.out.println(parts[0]);
-                                                                System.out.println(parts[1]);
-								bAdd.setEnabled(false);
-		                		bDelete.setEnabled(false);
-		                		bGetFile.setEnabled(false);
-		                		bLogout.setEnabled(false);
-								inf.setText("Transfering...");
-								send(CloudProtocol.GET_FILE + " " + parts[0] + " " + parts[1]);
-								
-							}
-	                    	
-	                    });
-	                    
-	                    bLogout = new Button("Logout");
-	                    bLogout.addActionListener(new ActionListener() {
-
-							@Override
-							public void actionPerformed(ActionEvent arg0) {
-								send(CloudProtocol.LOGOUT);
-								
-							}
-	                    	
-	                    });
-	                    JScrollPane scroll = new JScrollPane(listOfFiles);
-	                    listOfFiles.setBorder(BorderFactory.createEtchedBorder());
-	                    
-	                    
-	                    while(st.hasMoreTokens()) {
-	                    	String tmp = st.nextToken();
-	                    	modelList.addElement(tmp);
-	                    }
-	                    
-	                    GroupLayout layout = new GroupLayout(this.getContentPane());
-	                    layout.setAutoCreateContainerGaps(true);
-	                    layout.setAutoCreateGaps(true);
-	                    layout.setHorizontalGroup(
-	                    		layout.createSequentialGroup()
-	                    		.addComponent(scroll,200,250,Short.MAX_VALUE)
-	                    		.addGroup(
-	                    		layout.createParallelGroup().addComponent(bAdd).addComponent(bDelete).addComponent(bGetFile).addComponent(bLogout).addComponent(inf)
-	                    		
-	                    		)
-	                    		);
-	                    layout.setVerticalGroup(
-	                    		layout.createParallelGroup()
-	                    		.addComponent(scroll, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-	                    		.addGroup(layout.createSequentialGroup().addComponent(bAdd).addComponent(bDelete).addComponent(bGetFile).addComponent(bLogout).addComponent(inf))
-	                    		);
-	                	
-	                    setLayout(layout);
-	                    
-	                	setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-	                	setTitle(userName + " Cloud");
-	                	setResizable(false);
-	                	pack();
-	                    setVisible(true);
-	                    
 	                } else if(command.equals(CloudProtocol.LOGIN_EXISTS)) {
 	                	(parent.info).setText(CloudProtocol.LOGIN_EXISTS);
 	                	break;
@@ -483,7 +358,32 @@ public class User extends JFrame implements Runnable {
 		    dispose();
 
 	}
-	 
+	       
+         public static String hash(String s){
+            String generatedPassword = "";
+            try {
+                // Create MessageDigest instance for MD5
+                MessageDigest md = MessageDigest.getInstance("MD5");
+                //Add password bytes to digest
+                md.update(s.getBytes());
+                //Get the hash's bytes
+                byte[] bytes = md.digest();
+                //This bytes[] has bytes in decimal format;
+                //Convert it to hexadecimal format
+                StringBuilder sb = new StringBuilder();
+                for(int i=0; i< bytes.length ;i++)
+                {
+                    sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16).substring(1));
+                }
+                //Get complete hashed password in hex format
+                generatedPassword = sb.toString();
+            }
+            catch (NoSuchAlgorithmException e)
+            {
+                e.printStackTrace();
+            }
+            return generatedPassword;
+        }
 
 	 void close() {
 			try {
