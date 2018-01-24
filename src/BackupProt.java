@@ -3,7 +3,7 @@
  * Protokół implementujący komunikację między klientem a serwerem
  *
  */
-public class CloudProtocol {
+public class BackupProt {
 	static final String LOGIN = "login";
 	static final String LOGGEDIN = "loggedin";
 	static final String WRONG_LOGIN = "wrong_login";
